@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Advanced Sleep Calculator</title>
+<title>Advanced Sleep Calculator – World Class</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -21,7 +21,7 @@ body{
   background:var(--bg);
   color:var(--text);
 }
-.container{max-width:950px;margin:auto;padding:16px}
+.container{max-width:980px;margin:auto;padding:16px}
 .card{
   background:var(--card);
   border-radius:var(--radius);
@@ -29,7 +29,7 @@ body{
   margin-bottom:22px;
   padding:20px;
 }
-h1{margin:0;color:var(--primary)}
+h1,h3{margin:0;color:var(--primary)}
 small{color:var(--muted)}
 .grid{
   display:grid;
@@ -63,40 +63,58 @@ button{
 <!-- HEADER -->
 <div class="card">
 <h1>Advanced Sleep Calculator</h1>
-<small>Sleep cycles · Age needs · 7-day consistency · Health insights</small>
+<small>Sleep cycles · Age needs · Consistency · Health insights</small>
+</div>
+
+<!-- SLEEP CYCLES -->
+<div class="card">
+<h3>⏰ Sleep Cycle Calculator</h3>
+<div class="grid">
+<div>
+<label>I want to</label>
+<select id="mode">
+<option value="wake">Wake up at</option>
+<option value="bed">Go to bed at</option>
+</select>
+</div>
+<div>
+<label>Target Time</label>
+<input type="time" id="targetTime">
+</div>
+<div>
+<label>Sleep Latency (minutes)</label>
+<select id="latency">
+<option value="10">10</option>
+<option value="15" selected>15</option>
+<option value="20">20</option>
+<option value="30">30</option>
+</select>
+</div>
+</div>
+<button onclick="calcCycles()">Calculate Sleep Times</button>
+<div class="result" id="cycleRes">—</div>
 </div>
 
 <!-- AGE BASED -->
 <div class="card">
 <h3>🧬 Age-Based Sleep Needs</h3>
 <div class="grid">
-<div>
-<label>Age</label>
-<input id="age" type="number" placeholder="Years">
-</div>
-<div>
-<label>Average Sleep (hours/night)</label>
-<input id="avgSleep" type="number" step="0.1" placeholder="e.g. 7.5">
-</div>
+<div><label>Age</label><input id="ageInput" type="number"></div>
+<div><label>Avg Sleep (hrs/night)</label><input id="avgSleepInput" type="number" step="0.1"></div>
 </div>
 <button onclick="calcAgeSleep()">Analyze Sleep Need</button>
 <div class="result" id="ageResult">—</div>
 </div>
 
-<!-- 7 DAY TRACKER -->
+<!-- CONSISTENCY -->
 <div class="card">
 <h3>📅 7-Day Sleep Consistency Tracker</h3>
-
 <div class="grid">
-<div><label>Day 1 Midpoint (HH:MM)</label><input type="time" class="mid"></div>
-<div><label>Day 2 Midpoint</label><input type="time" class="mid"></div>
-<div><label>Day 3 Midpoint</label><input type="time" class="mid"></div>
-<div><label>Day 4 Midpoint</label><input type="time" class="mid"></div>
-<div><label>Day 5 Midpoint</label><input type="time" class="mid"></div>
-<div><label>Day 6 Midpoint</label><input type="time" class="mid"></div>
-<div><label>Day 7 Midpoint</label><input type="time" class="mid"></div>
+<input type="time" class="mid"><input type="time" class="mid">
+<input type="time" class="mid"><input type="time" class="mid">
+<input type="time" class="mid"><input type="time" class="mid">
+<input type="time" class="mid">
 </div>
-
 <button onclick="calcWeekly()">Calculate Weekly Consistency</button>
 <div class="result" id="weekResult">—</div>
 </div>
@@ -104,65 +122,63 @@ button{
 </div>
 
 <script>
-function calcAgeSleep(){
-  const age = +document.getElementById("age").value;
-  const avg = +document.getElementById("avgSleep").value;
-  if(!age || !avg){ ageResult.innerHTML="—"; return; }
+const pad=n=>String(n).padStart(2,"0");
+const toMin=t=>{const[h,m]=t.split(":").map(Number);return h*60+m};
+const fromMin=m=>`${pad(Math.floor(m/60)%24)}:${pad(m%60)}`;
 
+// Sleep cycles
+function calcCycles(){
+  const time=document.getElementById("targetTime").value;
+  if(!time){cycleRes.innerHTML="Please select a time";return;}
+  const mode=document.getElementById("mode").value;
+  const latency=+document.getElementById("latency").value;
+  const base=toMin(time);
+  let html="";
+  for(let c=6;c>=3;c--){
+    let t=(mode==="wake"?base-(c*90+latency):base+(c*90+latency)+1440)%1440;
+    html+=`<span class="tag">${fromMin(t)}</span> (${c} cycles)<br>`;
+  }
+  cycleRes.innerHTML=html;
+}
+
+// Age-based
+function calcAgeSleep(){
+  const age=+document.getElementById("ageInput").value;
+  const avg=+document.getElementById("avgSleepInput").value;
+  if(!age||!avg){ageResult.innerHTML="Please enter age and sleep hours";return;}
   let min,max;
-  if(age <=12){min=9;max=12}
+  if(age<=12){min=9;max=12}
   else if(age<=18){min=8;max=10}
   else if(age<=64){min=7;max=9}
   else{min=7;max=8}
-
-  let status;
-  if(avg < min) status = "Sleep Deficit ❌";
-  else if(avg > max) status = "Oversleeping ⚠️";
-  else status = "Optimal Sleep ✅";
-
-  ageResult.innerHTML = `
+  let status=avg<min?"Sleep Deficit ❌":avg>max?"Oversleeping ⚠️":"Optimal Sleep ✅";
+  ageResult.innerHTML=`
   <span class="tag">${min}–${max} hrs recommended</span>
   <span class="tag">${status}</span><br><br>
-  <strong>Your Sleep:</strong> ${avg} hrs/night<br>
-  <strong>Recommendation:</strong>
-  ${status==="Optimal Sleep ✅"
-    ?"Maintain your routine."
-    :"Adjust bedtime to reach recommended range."}
+  Your sleep: ${avg} hrs/night<br>
+  Recommendation: ${status==="Optimal Sleep ✅"?"Maintain routine":"Adjust duration"}
   `;
 }
 
+// Consistency (scientific)
 function calcWeekly(){
-  const times=[...document.querySelectorAll(".mid")]
-    .map(i=>i.value).filter(v=>v);
-
-  if(times.length < 4){
-    weekResult.innerHTML="Enter at least 4 days";
-    return;
-  }
-
-  const minutes = times.map(t=>{
-    const [h,m]=t.split(":").map(Number);
-    return h*60+m;
+  const vals=[...document.querySelectorAll(".mid")].map(i=>i.value).filter(Boolean);
+  if(vals.length<4){weekResult.innerHTML="Enter at least 4 days";return;}
+  const mins=vals.map(toMin);
+  const mean=mins.reduce((a,b)=>a+b,0)/mins.length;
+  const deviations=mins.map(m=>{
+    let d=Math.abs(m-mean);
+    return Math.min(d,1440-d);
   });
-
-  const avg = minutes.reduce((a,b)=>a+b,0)/minutes.length;
-  const dev = minutes.map(v=>Math.abs(v-avg));
-  const avgDev = dev.reduce((a,b)=>a+b,0)/dev.length;
-
-  let score = Math.max(0, Math.round(100 - (avgDev/30)*5));
-  let label =
-    score>=90?"Excellent 🟢":
-    score>=75?"Good 🟡":
-    score>=50?"Poor 🔴":"Very Irregular ❌";
-
-  weekResult.innerHTML = `
+  const avgDev=deviations.reduce((a,b)=>a+b,0)/deviations.length;
+  let score=Math.round(100-(avgDev/60)*10);
+  score=Math.max(0,Math.min(100,score));
+  let label=score>=85?"Excellent 🟢":score>=70?"Good 🟡":score>=50?"Poor 🔴":"Very Irregular ❌";
+  weekResult.innerHTML=`
   <span class="tag">Consistency ${score}/100</span>
   <span class="tag">${label}</span><br><br>
-  <strong>Average Midpoint Deviation:</strong> ${avgDev.toFixed(0)} min<br>
-  <strong>Insight:</strong>
-  ${score>=80
-    ?"Your sleep timing is stable."
-    :"Improve by sleeping within ±30 min daily."}
+  Avg deviation: ${avgDev.toFixed(0)} min<br>
+  Insight: ${score>=80?"Stable circadian rhythm":"Improve bedtime regularity"}
   `;
 }
 </script>
